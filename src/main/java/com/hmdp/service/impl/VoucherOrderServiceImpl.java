@@ -11,6 +11,8 @@ import com.hmdp.service.IVoucherService;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.SimpleRedisLock;
 import com.hmdp.utils.UserHolder;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -42,6 +44,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    private RedissonClient redissonClient;
+
     @Override
     public Result seckillVocher(Long voucherId) {
         //1.查询优惠卷id
@@ -69,10 +74,15 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }*/
 
         //创建锁对象
-        SimpleRedisLock redisLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+        //SimpleRedisLock redisLock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+
+        //用redisson 创建锁对象
+        RLock lock = redissonClient.getLock("lock:order:" + userId);
 
         //获取锁
-        boolean isLock = redisLock.tryLock(1200);
+        //boolean isLock = redisLock.tryLock(1200);
+
+        boolean isLock = lock.tryLock();
         //判断释放获取成功
         if(!isLock){
             //获取锁失败，返回错误或重试
@@ -83,7 +93,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return voucherOrderService.createVocherOrder(voucherId);
         } finally {
             //释放锁
-            redisLock.unlock();
+            lock.unlock();
         }
     }
 
