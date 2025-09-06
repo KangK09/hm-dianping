@@ -8,6 +8,7 @@ import org.springframework.data.redis.core.script.DefaultRedisScript;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+//redis lock
 public class SimpleRedisLock implements ILock{
 
     //名称不能写死，不让任何业务进来获取的是同一把锁，不同业务需要不同的锁
